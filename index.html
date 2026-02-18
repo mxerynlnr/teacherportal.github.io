@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>QuestList — Teacher Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* ── TOKENS ── */
+:root{
+  --bg:#f5f3ee;--surface:#ffffff;--surface2:#faf8f4;--panel:#f0ece3;
+  --border:#ddd8ce;--border2:#c8c2b4;
+  --navy:#1b3358;--navy2:#25456e;--navy3:#3a6494;
+  --amber:#c97d0a;--amber2:#e8960f;--amber-bg:#fef3c7;
+  --teal:#0d7377;--teal-bg:#ccfbf1;
+  --green:#15803d;--green-bg:#dcfce7;
+  --red:#b91c1c;--red-bg:#fee2e2;
+  --purple:#6d28d9;--purple-bg:#ede9fe;
+  --blue:#1d4ed8;--blue-bg:#dbeafe;
+  --text:#1c1917;--text2:#44403c;--text3:#78716c;--muted:#a8a29e;
+  --r:10px;--r2:16px;--r3:22px;
+  --sh:0 1px 4px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.05);
+  --sh2:0 4px 20px rgba(0,0,0,.1),0 2px 6px rgba(0,0,0,.06);
+  --t:.2s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 60% 40% at 90% 5%,rgba(200,160,60,.07),transparent),radial-gradient(ellipse 50% 35% at 5% 85%,rgba(27,51,88,.06),transparent);}
+button,input,textarea,select{font-family:inherit;}
+textarea{resize:vertical;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+
+/* ── LAYOUT ── */
+.app{position:relative;z-index:1;display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:230px;flex-shrink:0;background:var(--navy);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sb-logo{padding:24px 20px 18px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sb-logo-title{font-family:'DM Serif Display',serif;font-size:1.3rem;color:#fff;line-height:1;}
+.sb-logo-sub{font-size:.72rem;color:rgba(255,255,255,.45);letter-spacing:.07em;text-transform:uppercase;margin-top:4px;}
+.sb-nav{flex:1;padding:14px 10px;}
+.sb-section{font-size:.68rem;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:12px 10px 6px;font-weight:700;}
+.sb-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:9px;
+  color:rgba(255,255,255,.65);font-size:.85rem;font-weight:500;
+  cursor:pointer;transition:all var(--t);margin-bottom:2px;
+  border:none;background:transparent;width:100%;text-align:left;
+}
+.sb-item:hover{background:rgba(255,255,255,.07);color:#fff;}
+.sb-item.active{background:rgba(255,255,255,.12);color:#fff;font-weight:700;}
+.sb-item .sb-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+.sb-badge{margin-left:auto;background:var(--amber2);color:#fff;font-size:.64rem;font-weight:800;padding:2px 7px;border-radius:20px;min-width:20px;text-align:center;}
+.sb-footer{padding:14px 12px;border-top:1px solid rgba(255,255,255,.08);}
+.sb-footer-text{font-size:.72rem;color:rgba(255,255,255,.3);text-align:center;line-height:1.6;}
+
+/* ── MAIN CONTENT ── */
+.main{flex:1;overflow-y:auto;min-width:0;}
+.page{display:none;padding:28px 32px;max-width:1100px;}
+.page.active{display:block;}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+.page-title{font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--navy);line-height:1.2;}
+.page-sub{font-size:.85rem;color:var(--text3);margin-top:4px;}
+.header-actions{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--sh);padding:22px 24px;margin-bottom:18px;}
+.card-title{font-weight:700;font-size:.9rem;color:var(--text2);letter-spacing:.03em;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── FORM FIELDS ── */
+.field{margin-bottom:16px;}
+.field:last-child{margin-bottom:0;}
+.label{display:block;font-size:.82rem;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.req{color:var(--red);margin-left:2px;}
+.opt{color:var(--muted);font-weight:400;}
+.input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:.9rem;padding:9px 12px;outline:none;transition:border-color var(--t),box-shadow var(--t);}
+.input:focus{border-color:var(--navy3);box-shadow:0 0 0 3px rgba(58,100,148,.15);}
+.input::placeholder{color:var(--muted);}
+.textarea{min-height:80px;line-height:1.55;}
+.hint{font-size:.74rem;color:var(--muted);margin-top:5px;display:block;}
+.char-count{text-align:right;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:640px){.row2,.row3{grid-template-columns:1fr;}}
+
+/* Task type selector */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.type-opt{position:relative;cursor:pointer;}
+.type-opt input{position:absolute;opacity:0;width:0;height:0;}
+.type-card{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:14px;border:2px solid var(--border);border-radius:var(--r);
+  background:var(--surface2);transition:all var(--t);
+}
+.type-opt:hover .type-card{border-color:var(--border2);transform:translateY(-2px);}
+.type-opt input:checked + .type-card.perf{border-color:var(--purple);background:#f5f3ff;box-shadow:0 0 0 3px rgba(109,40,217,.1);}
+.type-opt input:checked + .type-card.act{border-color:var(--blue);background:#eff6ff;box-shadow:0 0 0 3px rgba(29,78,216,.1);}
+.type-card-icon{font-size:1.8rem;}
+.type-card-label{font-size:.82rem;font-weight:700;color:var(--text);}
+.type-card-xp{font-size:.72rem;color:var(--muted);}
+
+/* File upload */
+.file-upload-zone{
+  border:2px dashed var(--border2);border-radius:var(--r);
+  padding:20px;text-align:center;cursor:pointer;
+  transition:all var(--t);background:var(--surface2);
+}
+.file-upload-zone:hover{border-color:var(--navy3);background:#f0f4f8;}
+.file-upload-zone.drag-over{border-color:var(--navy);background:#e0e7ff;}
+.file-upload-icon{font-size:2rem;margin-bottom:8px;opacity:.4;}
+.file-upload-text{font-size:.85rem;color:var(--text2);font-weight:500;}
+.file-upload-hint{font-size:.74rem;color:var(--muted);margin-top:4px;}
+.file-list{margin-top:12px;}
+.file-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);margin-bottom:6px;
+}
+.file-item-icon{font-size:1.2rem;}
+.file-item-info{flex:1;min-width:0;}
+.file-item-name{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.file-item-size{font-size:.72rem;color:var(--muted);}
+.file-item-remove{
+  background:transparent;border:none;color:var(--red);
+  cursor:pointer;font-size:1.1rem;padding:4px 8px;
+  border-radius:6px;transition:background var(--t);
+}
+.file-item-remove:hover{background:var(--red-bg);}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;justify-content:center;
+  padding:9px 18px;border-radius:var(--r);font-size:.85rem;font-weight:600;
+  cursor:pointer;transition:all var(--t);border:none;
+  white-space:nowrap;
+}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:none;}
+.btn-primary{background:var(--navy);color:#fff;}
+.btn-primary:hover{background:var(--navy2);box-shadow:var(--sh2);}
+.btn-secondary{background:var(--surface);color:var(--text2);border:1px solid var(--border2);}
+.btn-secondary:hover{border-color:var(--navy3);color:var(--navy);}
+.btn-amber{background:var(--amber2);color:#fff;}
+.btn-amber:hover{background:#d97706;box-shadow:var(--sh2);}
+.btn-red{background:var(--red);color:#fff;}
+.btn-red:hover{background:#991b1b;box-shadow:var(--sh2);}
+.btn-sm{padding:6px 12px;font-size:.78rem;}
+.btn-full{width:100%;}
+
+/* ── STATS CARDS ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r2);padding:18px 20px;box-shadow:var(--sh);
+  display:flex;align-items:flex-start;gap:14px;
+}
+.stat-icon{font-size:2rem;width:44px;text-align:center;flex-shrink:0;}
+.stat-content{flex:1;min-width:0;}
+.stat-label{font-size:.76rem;color:var(--text3);margin-bottom:4px;letter-spacing:.03em;text-transform:uppercase;}
+.stat-num{font-size:1.8rem;font-weight:700;color:var(--navy);line-height:1;}
+.stat-sub{font-size:.76rem;color:var(--muted);margin-top:4px;}
+
+/* ── TASK LIST ── */
+.task-list{display:flex;flex-direction:column;gap:12px;}
+.task-item{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r2);padding:18px 20px;box-shadow:var(--sh);
+  display:flex;align-items:flex-start;gap:16px;
+  transition:border-color var(--t);position:relative;overflow:hidden;
+}
+.task-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;}
+.task-item.perf::before{background:linear-gradient(180deg,var(--purple),#8b5cf6);}
+.task-item.act::before{background:linear-gradient(180deg,var(--blue),#60a5fa);}
+.task-item:hover{border-color:var(--border2);}
+.task-icon{font-size:2rem;width:48px;text-align:center;flex-shrink:0;}
+.task-content{flex:1;min-width:0;}
+.task-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;}
+.task-title{font-size:1rem;font-weight:700;color:var(--text);flex:1;min-width:0;line-height:1.4;}
+.task-badge{font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;text-transform:uppercase;}
+.task-badge.perf{background:var(--purple-bg);color:var(--purple);}
+.task-badge.act{background:var(--blue-bg);color:var(--blue);}
+.task-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--text3);margin-bottom:8px;}
+.task-meta-item{display:flex;align-items:center;gap:4px;}
+.task-notes{font-size:.82rem;color:var(--text2);line-height:1.6;margin-bottom:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--r);border-left:3px solid var(--border2);}
+.task-files{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.file-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 10px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;font-size:.74rem;color:var(--text2);font-weight:500;
+}
+.task-stats{display:flex;gap:20px;font-size:.78rem;color:var(--muted);}
+.task-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── TRACKER ── */
+.tracker-wrap{overflow-x:auto;}
+.tracker-table{width:100%;border-collapse:collapse;font-size:.83rem;}
+.tracker-table th{background:var(--panel);color:var(--text2);font-weight:700;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border2);white-space:nowrap;}
+.tracker-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tracker-table tr:last-child td{border-bottom:none;}
+.tracker-table tr:hover td{background:var(--surface2);}
+.tracker-empty{text-align:center;padding:30px;color:var(--muted);}
+.tag{font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+.tag-act{background:#fef9c3;color:#92400e;}
+.approve-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:var(--r);font-size:.78rem;font-weight:600;
+  cursor:pointer;transition:all var(--t);
+  background:transparent;border:1px solid var(--border2);color:var(--text2);
+}
+.approve-btn:hover{border-color:var(--green);color:var(--green);}
+.approve-btn.approved{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+.empty-tracker{text-align:center;padding:36px;color:var(--muted);font-size:.85rem;}
+.empty-tracker span{display:block;font-size:2rem;margin-bottom:8px;opacity:.3;}
+
+/* ── QR MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--r3);box-shadow:0 20px 60px rgba(0,0,0,.3);max-width:480px;width:100%;max-height:90vh;overflow-y:auto;animation:modalIn .3s cubic-bezier(.34,1.56,.64,1);}
+@keyframes modalIn{from{opacity:0;transform:scale(.85) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.modal-header{padding:24px 28px 16px;border-bottom:1px solid var(--border);}
+.modal-title{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--navy);line-height:1.2;}
+.modal-sub{font-size:.82rem;color:var(--text3);margin-top:4px;}
+.modal-body{padding:24px 28px;}
+.modal-footer{padding:16px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+.qr-display{
+  padding:24px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r2);text-align:center;margin-bottom:20px;
+}
+#qr-canvas{display:inline-block;}
+.qr-hint{font-size:.8rem;color:var(--muted);margin-top:12px;line-height:1.6;}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--navy);color:#fff;padding:12px 24px;border-radius:var(--r2);
+  font-size:.85rem;font-weight:600;box-shadow:var(--sh2);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:2000;
+  white-space:nowrap;max-width:calc(100vw - 40px);overflow:hidden;text-overflow:ellipsis;
+}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.ok{background:var(--green);}
+#toast.err{background:var(--red);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .app{flex-direction:column;}
+  .sidebar{width:100%;height:auto;position:relative;}
+  .main{width:100%;}
+}
+</style>
+</head>
+
+<body>
+<div id="toast"></div>
+
+<!-- QR Code Modal -->
+<div class="modal-overlay" id="modal-qr">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📱 Task QR Code</div>
+      <div class="modal-sub">Students scan this to receive the task</div>
+    </div>
+    <div class="modal-body">
+      <div class="qr-display">
+        <div id="qr-canvas"></div>
+        <p class="qr-hint">Students should open their QuestList app and scan this code to add the task to their quest list.</p>
+      </div>
+      <div id="qr-task-info"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-qr')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-title">⚔️ QuestList</div>
+      <div class="sb-logo-sub">Teacher Portal</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Management</div>
+      <button class="sb-item active" onclick="goPage('dashboard',this)"><span class="sb-icon">📊</span> Dashboard</button>
+      <button class="sb-item" onclick="goPage('create',this)"><span class="sb-icon">➕</span> Create Task</button>
+      <button class="sb-item" onclick="goPage('tasks',this)"><span class="sb-icon">📋</span> My Tasks <span class="sb-badge" id="tasks-count">0</span></button>
+      <button class="sb-item" onclick="goPage('tracker',this)"><span class="sb-icon">👥</span> Student Tracker</button>
+    </nav>
+    <div class="sb-footer">
+      <p class="sb-footer-text">QuestList v2.0<br/>Classroom Gamification</p>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <!-- Dashboard Page -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div><div class="page-title">Dashboard</div><div class="page-sub">Overview of your classroom gamification</div></div>
+      </div>
+      <div id="dashboard-stats"></div>
+      <div id="dashboard-recent"></div>
+    </div>
+
+    <!-- Create Task Page -->
+    <div class="page" id="page-create">
+      <div class="page-header">
+        <div><div class="page-title">Create New Task</div><div class="page-sub">Set up a quest for your students</div></div>
+      </div>
+      <form id="form-create" onsubmit="createTask(event)">
+        <div class="card">
+          <div class="card-title">📝 Basic Information</div>
+          <div class="field">
+            <label class="label">Task Title <span class="req">*</span></label>
+            <input class="input" name="title" placeholder="E.g., Complete Chapter 5 Quiz" maxlength="80" required/>
+            <span class="hint char-count"><span id="title-count">0</span>/80</span>
+          </div>
+          <div class="field">
+            <label class="label">Task Type <span class="req">*</span></label>
+            <div class="type-grid">
+              <label class="type-opt">
+                <input type="radio" name="f-type" value="performance" required/>
+                <div class="type-card perf">
+                  <div class="type-card-icon">⚡</div>
+                  <div class="type-card-label">Performance Task</div>
+                  <div class="type-card-xp">+50 XP</div>
+                </div>
+              </label>
+              <label class="type-opt">
+                <input type="radio" name="f-type" value="activity" required/>
+                <div class="type-card act">
+                  <div class="type-card-icon">📝</div>
+                  <div class="type-card-label">Activity</div>
+                  <div class="type-card-xp">+25 XP</div>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label class="label">Subject <span class="opt">(optional)</span></label>
+              <input class="input" name="subject" placeholder="E.g., Mathematics" maxlength="40"/>
+            </div>
+            <div class="field">
+              <label class="label">Deadline <span class="opt">(optional)</span></label>
+              <input class="input" name="deadline" type="datetime-local"/>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Notes <span class="opt">(optional)</span></label>
+            <textarea class="input textarea" name="notes" placeholder="Additional instructions or details for students..." maxlength="300"></textarea>
+            <span class="hint char-count"><span id="notes-count">0</span>/300</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📎 File Attachments</div>
+          <div class="field">
+            <label class="label">Upload Files <span class="opt">(optional, max 10MB each)</span></label>
+            <div class="file-upload-zone" id="file-drop-zone" onclick="document.getElementById('file-input').click()">
+              <div class="file-upload-icon">📁</div>
+              <div class="file-upload-text">Click to select files or drag & drop here</div>
+              <div class="file-upload-hint">PDF, Word, Excel, PowerPoint, Images (max 10MB each)</div>
+            </div>
+            <input type="file" id="file-input" multiple style="display:none" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif" onchange="handleFiles(this.files)"/>
+            <div class="file-list" id="file-list"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="resetForm()">🔄 Reset Form</button>
+          <button type="submit" class="btn btn-primary">✨ Create Task & Generate QR</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tasks Page -->
+    <div class="page" id="page-tasks">
+      <div class="page-header">
+        <div><div class="page-title">My Tasks</div><div class="page-sub">View and manage all created tasks</div></div>
+      </div>
+      <div id="tasks-content"></div>
+    </div>
+
+    <!-- Tracker Page -->
+    <div class="page" id="page-tracker">
+      <div class="page-header">
+        <div><div class="page-title">Student Tracker</div><div class="page-sub">See who scanned each task QR code and approve completion</div></div>
+      </div>
+      <div id="tracker-content"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   DATA MODEL
+============================================================ */
+const STATE_KEY = 'ql_teacher_tasks_v2';
+const SCAN_KEY  = 'ql_student_scans_v1'; // shared with student app
+let tasks = loadTasks();
+let uploadedFiles = []; // temporary storage for form files
+
+function loadTasks(){
+  try{ const r=JSON.parse(localStorage.getItem(STATE_KEY)); if(r) return r; }catch(_){}
+  return [];
+}
+function saveTasks(){
+  try{ localStorage.setItem(STATE_KEY,JSON.stringify(tasks)); }catch(_){}
+}
+
+function loadScans(){
+  try{ const r=JSON.parse(localStorage.getItem(SCAN_KEY)); if(r) return r; }catch(_){}
+  return [];
+}
+function saveScans(scans){
+  try{ localStorage.setItem(SCAN_KEY,JSON.stringify(scans)); }catch(_){}
+}
+
+/* ============================================================
+   NAVIGATION
+============================================================ */
+function goPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  // Render page content
+  if(id==='dashboard') renderDashboard();
+  if(id==='tasks')     renderTasks();
+  if(id==='tracker')   renderTracker();
+}
+
+/* ============================================================
+   TOAST NOTIFICATION
+============================================================ */
+let _toastTimer=null;
+function toast(msg,type='',dur=2500){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='show'+(type?' '+type:'');
+  clearTimeout(_toastTimer); _toastTimer=setTimeout(()=>el.className='',dur);
+}
+
+/* ============================================================
+   MODAL
+============================================================ */
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+}
+
+/* ============================================================
+   FILE HANDLING
+============================================================ */
+function handleFiles(files){
+  for(let f of files){
+    if(f.size>10*1024*1024){ toast('⚠ '+f.name+' is too large (max 10MB)','err'); continue; }
+    const reader=new FileReader();
+    reader.onload=e=>{ uploadedFiles.push({name:f.name,type:f.type,size:f.size,dataUrl:e.target.result}); renderFileList(); };
+    reader.readAsDataURL(f);
+  }
+}
+
+function renderFileList(){
+  const list=document.getElementById('file-list');
+  if(!uploadedFiles.length){ list.innerHTML=''; return; }
+  list.innerHTML=uploadedFiles.map((f,i)=>`
+    <div class="file-item">
+      <div class="file-item-icon">${fileIcon(f.type)}</div>
+      <div class="file-item-info">
+        <div class="file-item-name">${esc(f.name)}</div>
+        <div class="file-item-size">${formatBytes(f.size)}</div>
+      </div>
+      <button type="button" class="file-item-remove" onclick="removeFile(${i})" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeFile(idx){
+  uploadedFiles.splice(idx,1);
+  renderFileList();
+}
+
+function fileIcon(type){
+  if(!type) return '📎';
+  if(type==='application/pdf') return '📄';
+  if(type.includes('word')||type.includes('docx')) return '📝';
+  if(type.includes('excel')||type.includes('sheet')) return '📊';
+  if(type.includes('powerpoint')||type.includes('presentation')) return '📊';
+  if(type.startsWith('image/')) return '🖼️';
+  return '📎';
+}
+
+function formatBytes(b){
+  if(b<1024) return b+' B';
+  if(b<1024*1024) return (b/1024).toFixed(1)+' KB';
+  return (b/(1024*1024)).toFixed(1)+' MB';
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Drag & drop
+const dropZone=()=>document.getElementById('file-drop-zone');
+window.addEventListener('DOMContentLoaded',()=>{
+  const dz=dropZone();
+  if(!dz) return;
+  dz.addEventListener('dragover',e=>{ e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+  dz.addEventListener('drop',e=>{ e.preventDefault(); dz.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+});
+
+// Character counters
+document.addEventListener('DOMContentLoaded',()=>{
+  const titleInput=document.querySelector('input[name="title"]');
+  const notesInput=document.querySelector('textarea[name="notes"]');
+  if(titleInput) titleInput.addEventListener('input',e=>document.getElementById('title-count').textContent=e.target.value.length);
+  if(notesInput) notesInput.addEventListener('input',e=>document.getElementById('notes-count').textContent=e.target.value.length);
+});
+
+/* ============================================================
+   CREATE TASK
+============================================================ */
+function createTask(e){
+  e.preventDefault();
+  const form=e.target;
+  const title   =form.title.value.trim();
+  const typeEl  =document.querySelector('input[name="f-type"]:checked');
+  const type    =typeEl?typeEl.value:'activity';
+  const subject =form.subject.value.trim();
+  const deadline=form.deadline.value||null;
+  const notes   =form.notes.value.trim();
+
+  if(!title){ toast('⚠ Task title required','err'); return; }
+
+  const task={
+    id:'task_'+Date.now(),
+    title,type,subject,notes,deadline,
+    files:uploadedFiles.slice(),
+    createdAt:new Date().toISOString(),
+  };
+
+  tasks.push(task);
+  saveTasks();
+  toast('✅ Task created! QR code generated.','ok');
+  showQR(task);
+  resetForm();
+  document.getElementById('tasks-count').textContent=tasks.length;
+}
+
+function resetForm(){
+  document.getElementById('form-create').reset();
+  document.querySelectorAll('input[name="f-type"]').forEach(r=>r.checked=false);
+  uploadedFiles=[];
+  renderFileList();
+  document.getElementById('title-count').textContent='0';
+  document.getElementById('notes-count').textContent='0';
+}
+
+/* ============================================================
+   QR CODE
+============================================================ */
+function showQR(task){
+  const payload={v:2,id:task.id,title:task.title,type:task.type,subject:task.subject,notes:task.notes,deadline:task.deadline};
+  const qrData=JSON.stringify(payload);
+  const canvas=document.getElementById('qr-canvas');
+  canvas.innerHTML='';
+  new QRCode(canvas,{text:qrData,width:240,height:240});
+  document.getElementById('qr-task-info').innerHTML=`
+    <div style="font-size:.85rem;color:var(--text2);line-height:1.7;">
+      <strong style="color:var(--navy);">${esc(task.title)}</strong><br/>
+      Type: <span style="color:var(--purple);">${task.type==='performance'?'⚡ Performance Task':'📝 Activity'}</span><br/>
+      XP: <strong>${task.type==='performance'?'50':'25'} XP</strong> (awarded when approved)
+    </div>
+  `;
+  document.getElementById('modal-qr').classList.add('open');
+}
+
+function showTaskQR(id){
+  const task=tasks.find(t=>t.id===id);
+  if(!task) return;
+  showQR(task);
+}
+
+/* ============================================================
+   DASHBOARD
+============================================================ */
+function renderDashboard(){
+  const scans=loadScans();
+  const total   =tasks.length;
+  const approved=scans.filter(s=>s.approved).length;
+  const pending =scans.filter(s=>!s.approved).length;
+  const students=new Set(scans.map(s=>s.studentName)).size;
+
+  const stats=[
+    {icon:'📋',num:total,    lbl:'Total Tasks'},
+    {icon:'✅',num:approved, lbl:'Approved'},
+    {icon:'⏳',num:pending,  lbl:'Pending'},
+    {icon:'👥',num:students, lbl:'Active Students'},
+  ];
+
+  document.getElementById('dashboard-stats').innerHTML=`
+    <div class="stats">
+      ${stats.map(s=>`
+        <div class="stat-card">
+          <div class="stat-icon">${s.icon}</div>
+          <div class="stat-content">
+            <div class="stat-label">${s.lbl}</div>
+            <div class="stat-num">${s.num}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // Recent tasks
+  const recent=tasks.slice(-5).reverse();
+  document.getElementById('dashboard-recent').innerHTML=!recent.length?'<div class="card" style="text-align:center;padding:40px;color:var(--muted);">No tasks created yet. Go to <strong>Create Task</strong> to get started.</div>':`
+    <div class="card">
+      <div class="card-title">📋 Recent Tasks</div>
+      <div class="task-list">
+        ${recent.map(t=>{
+          const scans=loadScans().filter(s=>s.taskId===t.id);
+          const approved=scans.filter(s=>s.approved).length;
+          return `
+            <div class="task-item ${t.type}">
+              <div class="task-icon">${t.type==='performance'?'⚡':'📝'}</div>
+              <div class="task-content">
+                <div class="task-header">
+                  <div class="task-title">${esc(t.title)}</div>
+                  <div class="task-badge ${t.type}">${t.type==='performance'?'⚡ Performance':'📝 Activity'}</div>
+                </div>
+                <div class="task-meta">
+                  ${t.subject?`<div class="task-meta-item">📚 ${esc(t.subject)}</div>`:''}
+                  <div class="task-meta-item">⚡ ${t.type==='performance'?'50':'25'} XP</div>
+                  ${t.deadline?`<div class="task-meta-item">📅 ${fmtDeadline(t.deadline)}</div>`:''}
+                </div>
+                <div class="task-stats">
+                  <span>👥 ${scans.length} scan${scans.length!==1?'s':''} · ✅ ${approved} approved</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <button class="btn btn-secondary btn-sm" onclick="showTaskQR('${t.id}')">📱 Show QR</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function fmtDeadline(d){
+  if(!d) return '';
+  return new Date(d).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+/* ============================================================
+   TASKS PAGE
+============================================================ */
+function renderTasks(){
+  if(!tasks.length){ document.getElementById('tasks-content').innerHTML='<div class="card" style="text-align:center;padding:40px;color:var(--muted);">No tasks created yet.</div>'; return; }
+  document.getElementById('tasks-content').innerHTML=`
+    <div class="task-list">
+      ${tasks.slice().reverse().map(t=>{
+        const scans=loadScans().filter(s=>s.taskId===t.id);
+        const approved=scans.filter(s=>s.approved).length;
+        return `
+          <div class="card task-item ${t.type}">
+            <div class="task-icon">${t.type==='performance'?'⚡':'📝'}</div>
+            <div class="task-content">
+              <div class="task-header">
+                <div class="task-title">${esc(t.title)}</div>
+                <div class="task-badge ${t.type}">${t.type==='performance'?'⚡ Performance':'📝 Activity'}</div>
+              </div>
+              <div class="task-meta">
+                ${t.subject?`<div class="task-meta-item">📚 ${esc(t.subject)}</div>`:''}
+                <div class="task-meta-item">⚡ ${t.type==='performance'?'50':'25'} XP</div>
+                ${t.deadline?`<div class="task-meta-item">📅 ${fmtDeadline(t.deadline)}</div>`:''}
+              </div>
+              ${t.notes?`<div class="task-notes">${esc(t.notes)}</div>`:''}
+              ${t.files&&t.files.length?`<div class="task-files">${t.files.map(f=>`<span class="file-chip">${fileIcon(f.type)} ${esc(f.name)}</span>`).join('')}</div>`:''}
+              <div class="task-stats">
+                <span>👥 ${scans.length} scan${scans.length!==1?'s':''}</span>
+                <span>✅ ${approved} approved</span>
+              </div>
+            </div>
+            <div class="task-actions">
+              <button class="btn btn-amber btn-sm" onclick="showTaskQR('${t.id}')">📱 Show QR</button>
+              <button class="btn btn-red btn-sm" onclick="deleteTask('${t.id}')">🗑 Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function deleteTask(id){
+  if(!confirm('Delete this task? This cannot be undone.')) return;
+  tasks=tasks.filter(t=>t.id!==id);
+  saveTasks();
+  renderTasks();
+  document.getElementById('tasks-count').textContent=tasks.length;
+  toast('🗑 Task deleted.','ok');
+}
+
+/* ============================================================
+   TRACKER PAGE
+============================================================ */
+function renderTracker(){
+  const scans=loadScans();
+  if(!tasks.length){ document.getElementById('tracker-content').innerHTML='<div class="card" style="text-align:center;padding:40px;color:var(--muted);">No tasks created yet.</div>'; return; }
+
+  document.getElementById('tracker-content').innerHTML=tasks.slice().reverse().map(task=>{
+    const taskScans=scans.filter(s=>s.taskId===task.id);
+    if(!taskScans.length) return '';
+    const approved =taskScans.filter(s=>s.approved).length;
+
+    return `
+      <div class="card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px;">
+          <div>
+            <div style="font-weight:700;font-size:1rem;color:var(--navy);margin-bottom:4px;">${esc(task.title)}</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <span class="task-badge ${task.type}">${task.type==='performance'?'⚡ Performance':'📝 Activity'}</span>
+              <div style="font-size:.72rem;color:var(--muted);">${taskScans.length} scans · ${approved} approved</div>
+            </div>
+          </div>
+        </div>
+        <div class="tracker-wrap">
+          <table class="tracker-table">
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Scanned</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${taskScans.map(s=>`
+                <tr>
+                  <td style="font-weight:600;">${esc(s.studentName)}</td>
+                  <td style="color:var(--muted);font-size:.78rem;">${formatTime(s.scannedAt)}</td>
+                  <td>
+                    <span class="tag ${s.approved?'':'tag-act'}" style="${s.approved?'background:var(--green-bg);color:var(--green);':'background:#fef9c3;color:#92400e;'}">
+                      ${s.approved?'✅ Approved':'⏳ Pending'}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="approve-btn ${s.approved?'approved':''}" onclick="toggleApprove('${task.id}','${s.id}')">
+                      <span>${s.approved?'✅':'☐'}</span>
+                      <span>${s.approved?'Approved':'Approve'}</span>
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatTime(iso){
+  const d=new Date(iso);
+  return d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function toggleApprove(taskId,scanId){
+  const scans=loadScans();
+  const scan=scans.find(s=>s.id===scanId);
+  if(!scan) return;
+  scan.approved=!scan.approved;
+  // Reset xpApplied when approval changes
+  if(scan.approved){ scan.xpApplied=false; }
+  saveScans(scans);
+  renderTracker();
+  if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
+  toast(scan.approved?'✅ Student approved! XP will be awarded automatically.':'↩ Approval removed.','ok');
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+document.addEventListener('DOMContentLoaded',()=>{
+  renderDashboard();
+  document.getElementById('tasks-count').textContent=tasks.length;
+  // Listen for storage changes from student app
+  window.addEventListener('storage',e=>{ if(e.key===SCAN_KEY){ renderDashboard(); if(document.getElementById('page-tracker').classList.contains('active')) renderTracker(); } });
+});
+</script>
+</body>
+</html>
