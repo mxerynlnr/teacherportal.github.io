@@ -570,43 +570,26 @@ function resetForm(){
 /* ============================================================
    QR CODE
 ============================================================ */
-/* ============================================================ QR LOGIC */
-function showQR(taskId) {
-  const task = tasks.find(t => t.id === taskId);
-  if (!task) return;
+function showQR(task){
+  const payload={v:2,id:task.id,title:task.title,type:task.type,subject:task.subject,notes:task.notes,deadline:task.deadline};
+  const qrData=JSON.stringify(payload);
+  const canvas=document.getElementById('qr-canvas');
+  canvas.innerHTML='';
+  new QRCode(canvas,{text:qrData,width:240,height:240});
+  document.getElementById('qr-task-info').innerHTML=`
+    <div style="font-size:.85rem;color:var(--text2);line-height:1.7;">
+      <strong style="color:var(--navy);">${esc(task.title)}</strong><br/>
+      Type: <span style="color:var(--purple);">${task.type==='performance'?'⚡ Performance Task':'📝 Activity'}</span><br/>
+      XP: <strong>${task.type==='performance'?'50':'25'} XP</strong> (awarded when approved)
+    </div>
+  `;
+  document.getElementById('modal-qr').classList.add('open');
+}
 
-  const payload = {
-    id: task.id,
-    name: task.name,
-    xp: task.xp,
-    type: task.type,
-    files: task.files || [] // Includes Base64 file data
-  };
-
-  const qrContainer = document.getElementById('qr-code');
-  qrContainer.innerHTML = '';
-  
-  // FIX: Instead of raw JSON, we wrap it in a URL. 
-  // This makes the QR code detectable by all scanner apps.
-  const baseUrl = window.location.href.split('?')[0].replace('teacher-portal', 'student-questlist');
-  const qrData = `${baseUrl}#task=${encodeURIComponent(JSON.stringify(payload))}`;
-
-  try {
-    new QRCode(qrContainer, {
-      text: qrData,
-      width: 256,
-      height: 256,
-      colorDark: "#1b3358",
-      colorLight: "#ffffff",
-      correctLevel: QRCode.CorrectLevel.H // High Error Correction for easier scanning
-    });
-    
-    document.getElementById('qr-task-name').textContent = task.name;
-    openModal('modal-qr');
-  } catch (err) {
-    console.error("QR Error", err);
-    toast("Failed to generate scan code", "error");
-  }
+function showTaskQR(id){
+  const task=tasks.find(t=>t.id===id);
+  if(!task) return;
+  showQR(task);
 }
 
 /* ============================================================
@@ -820,5 +803,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 </body>
-
 </html>
