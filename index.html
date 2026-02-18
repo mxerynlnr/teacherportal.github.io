@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>QuestList — Teacher Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* ── TOKENS ── */
+:root{
+  --bg:#f5f3ee;--surface:#ffffff;--surface2:#faf8f4;--panel:#f0ece3;
+  --border:#ddd8ce;--border2:#c8c2b4;
+  --navy:#1b3358;--navy2:#25456e;--navy3:#3a6494;
+  --amber:#c97d0a;--amber2:#e8960f;--amber-bg:#fef3c7;
+  --teal:#0d7377;--teal-bg:#ccfbf1;
+  --green:#15803d;--green-bg:#dcfce7;
+  --red:#b91c1c;--red-bg:#fee2e2;
+  --purple:#6d28d9;--purple-bg:#ede9fe;
+  --blue:#1d4ed8;--blue-bg:#dbeafe;
+  --text:#1c1917;--text2:#44403c;--text3:#78716c;--muted:#a8a29e;
+  --r:10px;--r2:16px;--r3:22px;
+  --sh:0 1px 4px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.05);
+  --sh2:0 4px 20px rgba(0,0,0,.1),0 2px 6px rgba(0,0,0,.06);
+  --t:.2s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 60% 40% at 90% 5%,rgba(200,160,60,.07),transparent),radial-gradient(ellipse 50% 35% at 5% 85%,rgba(27,51,88,.06),transparent);}
+button,input,textarea,select{font-family:inherit;}
+textarea{resize:vertical;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+
+/* ── LAYOUT ── */
+.app{position:relative;z-index:1;display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:230px;flex-shrink:0;background:var(--navy);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sb-logo{padding:24px 20px 18px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sb-logo-title{font-family:'DM Serif Display',serif;font-size:1.3rem;color:#fff;line-height:1;}
+.sb-logo-sub{font-size:.72rem;color:rgba(255,255,255,.45);letter-spacing:.07em;text-transform:uppercase;margin-top:4px;}
+.sb-nav{flex:1;padding:14px 10px;}
+.sb-section{font-size:.68rem;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:12px 10px 6px;font-weight:700;}
+.sb-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:9px;
+  color:rgba(255,255,255,.65);font-size:.85rem;font-weight:500;
+  cursor:pointer;transition:all var(--t);margin-bottom:2px;
+  border:none;background:transparent;width:100%;text-align:left;
+}
+.sb-item:hover{background:rgba(255,255,255,.07);color:#fff;}
+.sb-item.active{background:rgba(255,255,255,.12);color:#fff;font-weight:700;}
+.sb-item .sb-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+.sb-badge{margin-left:auto;background:var(--amber2);color:#fff;font-size:.64rem;font-weight:800;padding:2px 7px;border-radius:20px;min-width:20px;text-align:center;}
+.sb-footer{padding:14px 12px;border-top:1px solid rgba(255,255,255,.08);}
+.sb-footer-text{font-size:.72rem;color:rgba(255,255,255,.3);text-align:center;line-height:1.6;}
+
+/* ── MAIN CONTENT ── */
+.main{flex:1;overflow-y:auto;min-width:0;}
+.page{display:none;padding:28px 32px;max-width:1100px;}
+.page.active{display:block;}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+.page-title{font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--navy);line-height:1.2;}
+.page-sub{font-size:.85rem;color:var(--text3);margin-top:4px;}
+.header-actions{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--sh);padding:22px 24px;margin-bottom:18px;}
+.card-title{font-weight:700;font-size:.9rem;color:var(--text2);letter-spacing:.03em;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── FORM FIELDS ── */
+.field{margin-bottom:16px;}
+.field:last-child{margin-bottom:0;}
+.label{display:block;font-size:.82rem;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.req{color:var(--red);margin-left:2px;}
+.opt{color:var(--muted);font-weight:400;}
+.input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:.9rem;padding:9px 12px;outline:none;transition:border-color var(--t),box-shadow var(--t);}
+.input:focus{border-color:var(--navy3);box-shadow:0 0 0 3px rgba(58,100,148,.15);}
+.input::placeholder{color:var(--muted);}
+.textarea{min-height:80px;line-height:1.55;}
+.hint{font-size:.74rem;color:var(--muted);margin-top:5px;display:block;}
+.char-count{text-align:right;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:640px){.row2,.row3{grid-template-columns:1fr;}}
+
+/* Task type selector */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.type-opt{position:relative;cursor:pointer;}
+.type-opt input{position:absolute;opacity:0;width:0;height:0;}
+.type-card{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:16px 10px;border:2px solid var(--border);border-radius:var(--r2);
+  background:var(--surface2);transition:all var(--t);text-align:center;user-select:none;cursor:pointer;
+}
+.type-card:hover{border-color:var(--navy3);}
+.type-opt input:checked + .type-card.perf{border-color:var(--purple);background:#f5f3ff;box-shadow:0 0 0 3px rgba(109,40,217,.1);}
+.type-opt input:checked + .type-card.act{border-color:var(--blue);background:#eff6ff;box-shadow:0 0 0 3px rgba(29,78,216,.1);}
+.type-icon{font-size:1.7rem;}.type-name{font-weight:700;font-size:.85rem;color:var(--text);}
+.type-xp{font-size:.72rem;font-weight:800;padding:2px 9px;border-radius:20px;background:var(--amber-bg);color:var(--amber);}
+
+/* Upload zone */
+.drop-zone{
+  border:2px dashed var(--border2);border-radius:var(--r2);background:var(--surface2);
+  min-height:140px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all var(--t);position:relative;overflow:hidden;
+}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--navy3);background:rgba(58,100,148,.04);border-style:solid;}
+.drop-inner{display:flex;flex-direction:column;align-items:center;gap:7px;padding:24px;text-align:center;pointer-events:none;}
+.drop-icon{font-size:2.2rem;opacity:.4;}
+.drop-title{font-weight:600;font-size:.88rem;color:var(--text2);}
+.drop-hint{font-size:.76rem;color:var(--muted);}
+.drop-inner button{pointer-events:all;}
+.file-chips{display:flex;flex-wrap:wrap;gap:8px;padding:14px;}
+.file-chip{
+  display:flex;align-items:center;gap:7px;
+  background:var(--navy-bg,#e8eef6);border:1px solid var(--border);
+  border-radius:8px;padding:6px 10px 6px 8px;
+  font-size:.78rem;font-weight:500;max-width:180px;
+}
+.file-chip-icon{font-size:1.1rem;flex-shrink:0;}
+.file-chip-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-chip-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.85rem;flex-shrink:0;padding:0 2px;transition:color var(--t);}
+.file-chip-del:hover{color:var(--red);}
+.paste-hint{display:flex;align-items:center;gap:8px;font-size:.77rem;color:var(--text3);margin-top:10px;padding:8px 12px;background:var(--panel);border-radius:var(--r);border:1px solid var(--border);}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;border:none;border-radius:var(--r);padding:9px 18px;font-weight:600;font-size:.85rem;cursor:pointer;transition:all var(--t);white-space:nowrap;}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:none;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(27,51,88,.25);}
+.btn-primary:hover{background:var(--navy2);box-shadow:0 4px 14px rgba(27,51,88,.35);}
+.btn-amber{background:var(--amber2);color:#fff;box-shadow:0 2px 8px rgba(232,150,15,.25);}
+.btn-amber:hover{background:#d4880c;box-shadow:0 4px 14px rgba(232,150,15,.35);}
+.btn-teal{background:var(--teal);color:#fff;}
+.btn-teal:hover{background:#0a5e62;}
+.btn-outline{background:transparent;border:1.5px solid var(--border2);color:var(--text2);}
+.btn-outline:hover{border-color:var(--navy3);color:var(--navy);box-shadow:none;transform:none;}
+.btn-ghost{background:transparent;color:var(--text3);}
+.btn-ghost:hover{background:var(--panel);color:var(--text2);box-shadow:none;transform:none;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-sm{padding:6px 12px;font-size:.78rem;border-radius:7px;}
+.btn-full{width:100%;justify-content:center;}
+.btn-lg{padding:12px 24px;font-size:.95rem;border-radius:var(--r2);}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+@media(max-width:640px){.stats-row{grid-template-columns:1fr 1fr;}}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;box-shadow:var(--sh);}
+.stat-num{font-size:1.8rem;font-weight:800;color:var(--navy);line-height:1;}
+.stat-lbl{font-size:.75rem;color:var(--text3);margin-top:4px;font-weight:500;}
+.stat-icon{font-size:1.4rem;margin-bottom:8px;}
+
+/* ── TASK CARDS ── */
+.task-grid{display:flex;flex-direction:column;gap:12px;}
+.task-item{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r2);padding:16px 18px;
+  display:flex;align-items:flex-start;gap:14px;
+  box-shadow:var(--sh);transition:all var(--t);position:relative;overflow:hidden;
+}
+.task-item:hover{box-shadow:var(--sh2);border-color:var(--border2);}
+.task-item.archived{opacity:.55;}
+.task-stripe{position:absolute;left:0;top:0;bottom:0;width:4px;}
+.task-stripe.performance{background:linear-gradient(180deg,#7c3aed,#a855f7);}
+.task-stripe.activity{background:linear-gradient(180deg,#2563eb,#60a5fa);}
+.task-main{flex:1;min-width:0;}
+.task-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+.task-name{font-weight:700;font-size:.97rem;color:var(--text);}
+.tag{display:inline-block;font-size:.66rem;font-weight:800;padding:2px 9px;border-radius:20px;letter-spacing:.05em;text-transform:uppercase;}
+.tag-perf{background:var(--purple-bg);color:var(--purple);}
+.tag-act{background:var(--blue-bg);color:var(--blue);}
+.tag-archived{background:#f3f4f6;color:#6b7280;}
+.task-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:.78rem;color:var(--text3);margin-bottom:8px;}
+.task-meta span{display:flex;align-items:center;gap:4px;}
+.task-meta .deadline-warn{color:var(--red);font-weight:700;}
+.task-meta .deadline-ok{color:var(--green);}
+.task-notes{font-size:.8rem;color:var(--text3);line-height:1.55;margin-bottom:8px;padding:8px 10px;background:var(--panel);border-radius:7px;border-left:3px solid var(--border2);}
+.task-files{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.task-file-link{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:600;color:var(--navy3);background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:3px 9px;cursor:pointer;transition:all var(--t);}
+.task-file-link:hover{background:var(--blue-bg);border-color:#93c5fd;}
+.task-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.task-qr-mini{width:70px;height:70px;flex-shrink:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;}
+.task-qr-mini canvas,.task-qr-mini img{display:block;width:60px!important;height:60px!important;}
+
+/* ── STUDENT TRACKER TABLE ── */
+.tracker-wrap{overflow-x:auto;}
+.tracker-table{width:100%;border-collapse:collapse;font-size:.83rem;}
+.tracker-table th{background:var(--panel);color:var(--text2);font-weight:700;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border2);white-space:nowrap;}
+.tracker-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tracker-table tr:last-child td{border-bottom:none;}
+.tracker-table tr:hover td{background:var(--surface2);}
+.student-name{font-weight:600;color:var(--text);}
+.scan-time{font-size:.75rem;color:var(--muted);}
+.approve-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:7px;font-size:.78rem;font-weight:700;
+  border:1.5px solid var(--border2);background:transparent;cursor:pointer;
+  transition:all var(--t);color:var(--text3);
+}
+.approve-btn:hover{border-color:var(--green);color:var(--green);}
+.approve-btn.approved{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+.empty-tracker{text-align:center;padding:36px;color:var(--muted);font-size:.85rem;}
+.empty-tracker span{display:block;font-size:2rem;margin-bottom:8px;opacity:.3;}
+
+/* ── QR PREVIEW MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:500;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border-radius:var(--r3);padding:28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:popIn .35s cubic-bezier(.34,1.56,.64,1);position:relative;}
+@keyframes popIn{from{transform:scale(.7);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal-close{position:absolute;top:12px;right:14px;background:var(--panel);border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all var(--t);}
+.modal-close:hover{background:var(--red-bg);color:var(--red);}
+.modal-title{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy);margin-bottom:14px;}
+.qr-full-wrap{display:flex;align-items:center;justify-content:center;padding:18px;background:#fff;border-radius:var(--r2);border:1px solid var(--border);margin-bottom:16px;}
+.qr-full-wrap canvas,.qr-full-wrap img{display:block;}
+
+/* ── FILE PREVIEW MODAL ── */
+.file-preview-modal{max-width:80vw;max-height:85vh;overflow:auto;padding:16px;}
+.file-preview-modal img{max-width:100%;display:block;border-radius:var(--r);}
+
+/* ── ARCHIVE TOGGLE ── */
+.archive-toggle{display:flex;gap:8px;margin-bottom:18px;background:var(--panel);padding:4px;border-radius:var(--r);width:fit-content;}
+.arch-btn{padding:7px 18px;border-radius:8px;border:none;font-size:.82rem;font-weight:700;cursor:pointer;transition:all var(--t);background:transparent;color:var(--text3);}
+.arch-btn.active{background:var(--surface);color:var(--navy);box-shadow:var(--sh);}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;border-radius:12px;padding:11px 24px;font-size:.88rem;font-weight:600;transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:900;white-space:nowrap;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:calc(100vw - 40px);overflow:hidden;text-overflow:ellipsis;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.ok{background:var(--teal);}
+#toast.err{background:var(--red);}
+
+/* ── CREATE TASK FORM PANEL ── */
+.form-panel{max-width:700px;}
+.validation-msg{font-size:.8rem;color:var(--red);font-weight:500;margin-top:8px;min-height:16px;}
+
+/* ── DEADLINE DISPLAY ── */
+.deadline-badge{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:20px;}
+.deadline-badge.ok{background:var(--green-bg);color:var(--green);}
+.deadline-badge.warn{background:#fef9c3;color:#92400e;}
+.deadline-badge.late{background:var(--red-bg);color:var(--red);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:860px){
+  .sidebar{width:190px;}
+  .page{padding:20px 16px;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:600px){
+  .sidebar{display:none;}
+  .app{flex-direction:column;}
+  .main{width:100%;}
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- ── QR MODAL ── -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal-box" style="max-width:380px;text-align:center;">
+    <button class="modal-close" onclick="closeModal('qr-modal')">✕</button>
+    <div class="modal-title" id="qr-modal-title">Task QR Code</div>
+    <div class="qr-full-wrap"><div id="qr-modal-canvas"></div></div>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;" id="qr-modal-sub"></p>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <button class="btn btn-primary" onclick="printModalQR()">🖨️ Print</button>
+      <button class="btn btn-outline" onclick="downloadModalQR()">⬇ Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── FILE PREVIEW MODAL ── -->
+<div class="modal-overlay" id="file-modal">
+  <div class="modal-box file-preview-modal" style="max-width:85vw;max-height:90vh;overflow:auto;">
+    <button class="modal-close" onclick="closeModal('file-modal')">✕</button>
+    <div id="file-modal-content"></div>
+  </div>
+</div>
+
+<!-- ── TASK DETAILS MODAL ── -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal-box" style="max-width:600px;max-height:85vh;overflow-y:auto;">
+    <button class="modal-close" onclick="closeModal('detail-modal')">✕</button>
+    <div id="detail-modal-content"></div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-title">🧑‍🏫 QuestList</div>
+      <div class="sb-logo-sub">Teacher Portal</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Main</div>
+      <button class="sb-item active" onclick="goPage('dashboard',this)"><span class="sb-icon">📊</span> Dashboard</button>
+      <button class="sb-item" onclick="goPage('create',this)"><span class="sb-icon">➕</span> Create Task</button>
+      <div class="sb-section">Tasks</div>
+      <button class="sb-item" onclick="goPage('tasklist',this)"><span class="sb-icon">📋</span> Task List <span class="sb-badge" id="sb-active-count">0</span></button>
+      <button class="sb-item" onclick="goPage('archives',this)"><span class="sb-icon">🗄️</span> Archives <span class="sb-badge" id="sb-archive-count" style="background:#6b7280;">0</span></button>
+      <div class="sb-section">Students</div>
+      <button class="sb-item" onclick="goPage('tracker',this)"><span class="sb-icon">👥</span> Student Tracker</button>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-footer-text">QuestList Classroom Edition<br/>All data stored locally</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div><div class="page-title">Dashboard</div><div class="page-sub">Overview of your classroom tasks</div></div>
+        <div class="header-actions">
+          <button class="btn btn-amber" onclick="goPage('create',document.querySelector('.sb-item:nth-child(3)'))">➕ New Task</button>
+        </div>
+      </div>
+      <div class="stats-row" id="dash-stats"></div>
+      <div class="card">
+        <div class="card-title">📋 Recent Tasks</div>
+        <div id="dash-recent"></div>
+      </div>
+    </div>
+
+    <!-- ── CREATE TASK ── -->
+    <div class="page" id="page-create">
+      <div class="page-header">
+        <div><div class="page-title">Create Task</div><div class="page-sub">Build a new task and generate a QR code for your students</div></div>
+      </div>
+      <div class="form-panel">
+
+        <!-- Step 1: Task Details -->
+        <div class="card">
+          <div class="card-title">📝 Task Details</div>
+          <div class="field">
+            <label class="label">Task Title <span class="req">*</span></label>
+            <input class="input" id="f-title" type="text" placeholder="e.g. Chapter 4 Reading Comprehension" maxlength="80" oninput="validateForm()"/>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label class="label">Subject / Class</label>
+              <input class="input" id="f-subject" type="text" placeholder="e.g. English 7 - Section A"/>
+            </div>
+            <div class="field">
+              <label class="label">Deadline <span class="req">*</span></label>
+              <input class="input" id="f-deadline" type="datetime-local" oninput="validateForm()"/>
+              <span class="hint">Students will see a countdown on their task.</span>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Task Type <span class="req">*</span></label>
+            <div class="type-grid">
+              <label class="type-opt">
+                <input type="radio" name="f-type" value="performance" onchange="validateForm()"/>
+                <span class="type-card perf"><span class="type-icon">⚡</span><span class="type-name">Performance Task</span><span class="type-xp">+50 XP</span></span>
+              </label>
+              <label class="type-opt">
+                <input type="radio" name="f-type" value="activity" onchange="validateForm()"/>
+                <span class="type-card act"><span class="type-icon">📝</span><span class="type-name">Activity</span><span class="type-xp">+25 XP</span></span>
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Instructions / Notes <span class="opt">(optional)</span></label>
+            <textarea class="input textarea" id="f-notes" placeholder="e.g. Answer all questions on page 12. Show your solutions." maxlength="500" oninput="document.getElementById('f-char').textContent=this.value.length+' / 500'"></textarea>
+            <span class="hint char-count" id="f-char">0 / 500</span>
+          </div>
+        </div>
+
+        <!-- Step 2: File Upload -->
+        <div class="card">
+          <div class="card-title">📎 Attach Files <span style="font-weight:400;color:var(--muted);font-size:.8rem;">(optional)</span></div>
+          <p style="font-size:.84rem;color:var(--text3);margin-bottom:14px;line-height:1.6;">Attach worksheets, images, documents, or PDFs. Students will see these when they scan the QR code.</p>
+          <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+            <div class="drop-inner" id="drop-idle">
+              <span class="drop-icon">📁</span>
+              <p class="drop-title">Click to upload or drag & drop</p>
+              <p class="drop-hint">Supports: JPG, PNG, PDF, DOCX, DOC — max 10 MB each</p>
+              <button class="btn btn-outline btn-sm" type="button" onclick="event.stopPropagation();document.getElementById('file-input').click()">Browse Files</button>
+            </div>
+            <div id="file-chips-wrap" style="display:none;width:100%;"></div>
+          </div>
+          <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/gif,.pdf,.doc,.docx" style="display:none" onchange="handleFiles(this.files)"/>
+          <div class="paste-hint">📋 You can also <strong>paste (Ctrl+V)</strong> images directly anywhere on this page.</div>
+        </div>
+
+        <!-- Step 3: Generate -->
+        <div class="card">
+          <div class="card-title">⚡ Generate QR Code</div>
+          <p style="font-size:.84rem;color:var(--text3);margin-bottom:16px;line-height:1.6;">When ready, click Generate. A unique QR code will be created for this task. You can print it or display it to your class.</p>
+          <button class="btn btn-primary btn-lg btn-full" id="btn-gen" onclick="createTask()" disabled>
+            ⚡ Generate & Save Task
+          </button>
+          <div class="validation-msg" id="val-msg"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── TASK LIST ── -->
+    <div class="page" id="page-tasklist">
+      <div class="page-header">
+        <div><div class="page-title">Task List</div><div class="page-sub">All active tasks with QR codes</div></div>
+        <div class="header-actions">
+          <button class="btn btn-amber" onclick="goPage('create',null)">➕ New Task</button>
+        </div>
+      </div>
+      <div class="task-grid" id="tasklist-grid"></div>
+      <div id="tasklist-empty" style="display:none;text-align:center;padding:52px 20px;color:var(--muted);">
+        <div style="font-size:3rem;opacity:.25;margin-bottom:12px;">📋</div>
+        <div style="font-weight:700;margin-bottom:6px;">No Active Tasks</div>
+        <div style="font-size:.85rem;">Create your first task to get started!</div>
+      </div>
+    </div>
+
+    <!-- ── ARCHIVES ── -->
+    <div class="page" id="page-archives">
+      <div class="page-header">
+        <div><div class="page-title">Archives</div><div class="page-sub">Completed and archived tasks</div></div>
+      </div>
+      <div class="task-grid" id="archives-grid"></div>
+      <div id="archives-empty" style="display:none;text-align:center;padding:52px 20px;color:var(--muted);">
+        <div style="font-size:3rem;opacity:.25;margin-bottom:12px;">🗄️</div>
+        <div style="font-weight:700;margin-bottom:6px;">No Archived Tasks</div>
+        <div style="font-size:.85rem;">Archive tasks when they are completed.</div>
+      </div>
+    </div>
+
+    <!-- ── STUDENT TRACKER ── -->
+    <div class="page" id="page-tracker">
+      <div class="page-header">
+        <div><div class="page-title">Student Tracker</div><div class="page-sub">See who scanned each task QR code and approve completion</div></div>
+      </div>
+      <div id="tracker-content"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   DATA MODEL
+   Tasks stored in localStorage under key: ql_teacher_tasks_v2
+   Student scans stored under: ql_student_scans_v1  (shared with student app)
+============================================================ */
+const TASK_KEY  = 'ql_teacher_tasks_v2';
+const SCAN_KEY  = 'ql_student_scans_v1';
+const XP_MAP    = {performance:50, activity:25};
+const TYPE_LABEL= {performance:'⚡ Performance Task', activity:'📝 Activity'};
+
+function loadTasks(){ try{return JSON.parse(localStorage.getItem(TASK_KEY))||[];}catch(_){return[];} }
+function saveTasks(t){ try{localStorage.setItem(TASK_KEY,JSON.stringify(t));}catch(_){} }
+function loadScans(){ try{return JSON.parse(localStorage.getItem(SCAN_KEY))||[];}catch(_){return[];} }
+function saveScans(s){ try{localStorage.setItem(SCAN_KEY,JSON.stringify(s));}catch(_){} }
+
+let tasks = loadTasks();
+let pendingFiles = []; // { name, type, dataUrl }
+
+/* ============================================================ TOAST */
+let _tt=null;
+function toast(msg,type='',dur=2800){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='show'+(type?' '+type:'');
+  clearTimeout(_tt); _tt=setTimeout(()=>el.className='',dur);
+}
+
+/* ============================================================ NAVIGATION */
+function goPage(id, btnEl){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btnEl) btnEl.classList.add('active');
+  // Render appropriate page
+  if(id==='dashboard') renderDashboard();
+  if(id==='tasklist')  renderTaskList(false);
+  if(id==='archives')  renderTaskList(true);
+  if(id==='tracker')   renderTracker();
+  if(id==='create')    resetForm();
+  // Update sidebar badge
+  updateBadges();
+}
+
+/* ============================================================ BADGES */
+function updateBadges(){
+  const active   = tasks.filter(t=>!t.archived).length;
+  const archived = tasks.filter(t=>t.archived).length;
+  document.getElementById('sb-active-count').textContent  = active;
+  document.getElementById('sb-archive-count').textContent = archived;
+}
+
+/* ============================================================ FILE HELPERS */
+function fileIcon(type){
+  if(type==='application/pdf') return '📄';
+  if(type.includes('word')||type.includes('docx')||type.includes('doc')) return '📝';
+  if(type.startsWith('image/')) return '🖼️';
+  return '📎';
+}
+function formatBytes(b){ if(b<1024)return b+'B'; if(b<1048576)return (b/1024).toFixed(1)+'KB'; return (b/1048576).toFixed(1)+'MB'; }
+
+async function readFileAsDataUrl(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file);
+  });
+}
+
+async function handleFiles(fileList){
+  for(const file of fileList){
+    if(file.size>10*1024*1024){ toast('⚠ '+file.name+' exceeds 10 MB limit.','err'); continue; }
+    const allowed=['image/jpeg','image/png','image/gif','application/pdf','application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if(!allowed.some(a=>file.type===a)&&!file.name.match(/\.(jpg|jpeg|png|gif|pdf|doc|docx)$/i)){
+      toast('⚠ Unsupported file: '+file.name,'err'); continue;
+    }
+    const dataUrl = await readFileAsDataUrl(file);
+    pendingFiles.push({name:file.name, type:file.type, dataUrl, size:file.size});
+  }
+  renderFileChips();
+}
+
+function renderFileChips(){
+  const wrap=document.getElementById('file-chips-wrap');
+  const idle=document.getElementById('drop-idle');
+  if(!pendingFiles.length){ wrap.style.display='none'; idle.style.display='flex'; return; }
+  wrap.style.display='flex'; idle.style.display='none';
+  wrap.style.flexWrap='wrap'; wrap.style.gap='8px'; wrap.style.padding='14px';
+  wrap.innerHTML='';
+  pendingFiles.forEach((f,i)=>{
+    const chip=document.createElement('div'); chip.className='file-chip';
+    chip.innerHTML=`<span class="file-chip-icon">${fileIcon(f.type)}</span><span class="file-chip-name" title="${esc(f.name)}">${esc(f.name)}</span><span style="font-size:.72rem;color:var(--muted);flex-shrink:0;">${formatBytes(f.size)}</span><button class="file-chip-del" onclick="removeFile(${i})" title="Remove">✕</button>`;
+    wrap.appendChild(chip);
+  });
+  // Add more button
+  const add=document.createElement('button');
+  add.className='btn btn-outline btn-sm';
+  add.style.alignSelf='center';
+  add.textContent='+ Add More';
+  add.onclick=()=>document.getElementById('file-input').click();
+  wrap.appendChild(add);
+}
+function removeFile(i){ pendingFiles.splice(i,1); renderFileChips(); }
+
+/* Drag & drop */
+function dzOver(e){ e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function dzLeave(){ document.getElementById('drop-zone').classList.remove('drag-over'); }
+function dzDrop(e){ e.preventDefault(); dzLeave(); handleFiles(e.dataTransfer.files); }
+
+/* Paste images */
+document.addEventListener('paste',e=>{
+  if(!document.getElementById('page-create').classList.contains('active')) return;
+  for(const item of (e.clipboardData?.items||[])){
+    if(item.type.startsWith('image/')){ handleFiles([item.getAsFile()]); break; }
+  }
+});
+
+/* ============================================================ FORM VALIDATION */
+function validateForm(){
+  const title    = document.getElementById('f-title').value.trim();
+  const deadline = document.getElementById('f-deadline').value;
+  const typeEl   = document.querySelector('input[name="f-type"]:checked');
+  const btn      = document.getElementById('btn-gen');
+  const msg      = document.getElementById('val-msg');
+  const ok = title && deadline && typeEl;
+  btn.disabled = !ok;
+  if(!ok){
+    if(!title) msg.textContent='';
+    else if(!typeEl) msg.textContent='⚠ Please select a task type.';
+    else if(!deadline) msg.textContent='⚠ Please set a deadline.';
+  } else msg.textContent='';
+}
+function resetForm(){
+  ['f-title','f-subject','f-deadline','f-notes'].forEach(id=>document.getElementById(id).value='');
+  document.querySelectorAll('input[name="f-type"]').forEach(r=>r.checked=false);
+  pendingFiles=[];
+  renderFileChips();
+  validateForm();
+}
+
+/* ============================================================ CREATE TASK */
+function createTask(){
+  const title    = document.getElementById('f-title').value.trim();
+  const subject  = document.getElementById('f-subject').value.trim();
+  const deadline = document.getElementById('f-deadline').value;
+  const type     = document.querySelector('input[name="f-type"]:checked').value;
+  const notes    = document.getElementById('f-notes').value.trim();
+  if(!title||!deadline||!type){ toast('⚠ Please fill required fields.','err'); return; }
+
+  const id = 'task_'+Date.now();
+  const task = {
+    id, title, subject, type, notes, deadline,
+    files: [...pendingFiles],
+    createdAt: new Date().toISOString(),
+    archived: false,
+    xp: XP_MAP[type],
+  };
+  // Build QR payload (without full file data to keep QR scannable)
+  const payload = JSON.stringify({v:2, id, title, type, xp:XP_MAP[type], notes, deadline, subject});
+  task.payload = payload;
+  tasks.push(task); saveTasks(tasks);
+  updateBadges();
+  toast('✅ Task created! QR code ready.','ok');
+  // Show the QR modal
+  openQRModal(task);
+  resetForm();
+}
+
+/* ============================================================ QR MODAL */
+let _qrModalTask=null;
+function openQRModal(task){
+  _qrModalTask=task;
+  document.getElementById('qr-modal-title').textContent=task.title;
+  document.getElementById('qr-modal-sub').textContent=TYPE_LABEL[task.type]+' · Deadline: '+fmtDate(task.deadline);
+  const wrap=document.getElementById('qr-modal-canvas'); wrap.innerHTML='';
+  new QRCode(wrap,{text:task.payload,width:220,height:220,colorDark:'#1b3358',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  document.getElementById('qr-modal').classList.add('open');
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m) m.classList.remove('open');}));
+
+function printModalQR(){ window.print(); }
+function downloadModalQR(){
+  if(!_qrModalTask) return;
+  const canvas=document.querySelector('#qr-modal-canvas canvas');
+  const img   =document.querySelector('#qr-modal-canvas img');
+  let du;
+  if(canvas) du=canvas.toDataURL('image/png');
+  else if(img){const c=document.createElement('canvas');c.width=img.naturalWidth||220;c.height=img.naturalHeight||220;c.getContext('2d').drawImage(img,0,0);du=c.toDataURL('image/png');}
+  else{toast('⚠ QR not available.','err');return;}
+  const a=document.createElement('a');a.href=du;a.download='qr_'+_qrModalTask.title.replace(/\s+/g,'_')+'.png';a.click();
+  toast('⬇ QR downloaded!','ok');
+}
+
+/* ============================================================ DATE HELPERS */
+function fmtDate(dtStr){
+  if(!dtStr) return '—';
+  const d=new Date(dtStr);
+  return d.toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function deadlineStatus(dtStr){
+  if(!dtStr) return {cls:'',label:'No deadline'};
+  const diff=new Date(dtStr)-new Date();
+  if(diff<0) return {cls:'late',label:'⚠ Past due'};
+  const h=diff/3600000;
+  if(h<24) return {cls:'warn',label:'⏰ Due in '+Math.round(h)+'h'};
+  return {cls:'ok',label:'📅 Due '+fmtDate(dtStr)};
+}
+
+/* ============================================================ RENDER DASHBOARD */
+function renderDashboard(){
+  const active  =tasks.filter(t=>!t.archived).length;
+  const archived=tasks.filter(t=>t.archived).length;
+  const scans   =loadScans();
+  const approved=scans.filter(s=>s.approved).length;
+  const pending =scans.filter(s=>!s.approved).length;
+  const stats=[
+    {icon:'📋',num:active,   lbl:'Active Tasks'},
+    {icon:'🗄️',num:archived, lbl:'Archived'},
+    {icon:'✅',num:approved,  lbl:'Approved'},
+    {icon:'⏳',num:pending,   lbl:'Pending Review'},
+  ];
+  document.getElementById('dash-stats').innerHTML=stats.map(s=>`
+    <div class="stat-card"><div class="stat-icon">${s.icon}</div><div class="stat-num">${s.num}</div><div class="stat-lbl">${s.lbl}</div></div>
+  `).join('');
+  const recent=tasks.slice(-4).reverse();
+  document.getElementById('dash-recent').innerHTML=recent.length
+    ?recent.map(t=>taskCardHTML(t,true)).join('')
+    :`<div style="text-align:center;padding:30px;color:var(--muted);font-size:.85rem;">No tasks yet. <button class="btn btn-outline btn-sm" onclick="goPage('create',null)" style="margin-left:8px;">Create one</button></div>`;
+}
+
+/* ============================================================ TASK CARD HTML */
+function taskCardHTML(task, mini=false){
+  const ds=deadlineStatus(task.deadline);
+  const scans=loadScans().filter(s=>s.taskId===task.id);
+  const approved=scans.filter(s=>s.approved).length;
+  const qrId='qr_'+task.id;
+  const fileLinks=task.files.map((f,i)=>`<span class="task-file-link" onclick="openFilePreview(${task.files.indexOf(f)},${JSON.stringify(task.id).replace(/"/g,'&quot;')})">${fileIcon(f.type)} ${esc(f.name)}</span>`).join('');
+  return `
+  <div class="task-item${task.archived?' archived':''}" id="ti-${task.id}">
+    <div class="task-stripe ${task.type}"></div>
+    <div class="task-main">
+      <div class="task-title-row">
+        <span class="task-name">${esc(task.title)}</span>
+        <span class="tag tag-${task.type==='performance'?'perf':'act'}">${task.type==='performance'?'⚡ Performance':'📝 Activity'}</span>
+        ${task.archived?'<span class="tag tag-archived">🗄 Archived</span>':''}
+      </div>
+      <div class="task-meta">
+        ${task.subject?`<span>📚 ${esc(task.subject)}</span>`:''}
+        <span class="deadline-badge ${ds.cls}">${ds.label}</span>
+        <span>⚡ +${task.xp} XP</span>
+        <span>👥 ${scans.length} scan${scans.length!==1?'s':''} · ✅ ${approved} approved</span>
+      </div>
+      ${task.notes?`<div class="task-notes">${esc(task.notes)}</div>`:''}
+      ${task.files.length?`<div class="task-files">${fileLinks}</div>`:''}
+      ${!mini?`<div class="task-actions">
+        <button class="btn btn-primary btn-sm" onclick="openQRModal(tasks.find(t=>t.id==='${task.id}'))">🔲 Show QR</button>
+        <button class="btn btn-teal btn-sm" onclick="openTrackerFor('${task.id}')">👥 Students</button>
+        ${!task.archived
+          ?`<button class="btn btn-outline btn-sm" onclick="archiveTask('${task.id}')">🗄 Archive</button>`
+          :`<button class="btn btn-outline btn-sm" onclick="unarchiveTask('${task.id}')">♻ Restore</button>`}
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteTask('${task.id}')">🗑</button>
+      </div>`:''}
+    </div>
+    <div class="task-qr-mini" id="${qrId}"></div>
+  </div>`;
+}
+
+function renderTaskList(showArchived){
+  const filtered=tasks.filter(t=>t.archived===showArchived);
+  const gridId  =showArchived?'archives-grid':'tasklist-grid';
+  const emptyId =showArchived?'archives-empty':'tasklist-empty';
+  document.getElementById(gridId).innerHTML =filtered.map(t=>taskCardHTML(t,false)).join('');
+  document.getElementById(emptyId).style.display=filtered.length?'none':'block';
+  // Render mini QR codes
+  filtered.forEach(t=>{
+    const wrap=document.getElementById('qr_'+t.id);
+    if(wrap&&!wrap.querySelector('canvas')&&!wrap.querySelector('img')){
+      try{new QRCode(wrap,{text:t.payload,width:60,height:60,colorDark:'#1b3358',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.L});}catch(_){}
+    }
+  });
+}
+
+/* ============================================================ ARCHIVE / DELETE */
+function archiveTask(id){
+  const t=tasks.find(t=>t.id===id);
+  if(!t) return;
+  t.archived=true; saveTasks(tasks); updateBadges(); renderTaskList(false);
+  toast('🗄 Task archived.','ok');
+}
+function unarchiveTask(id){
+  const t=tasks.find(t=>t.id===id);
+  if(!t) return;
+  t.archived=false; saveTasks(tasks); updateBadges(); renderTaskList(true);
+  toast('♻ Task restored to active.','ok');
+}
+function deleteTask(id){
+  if(!confirm('Delete this task? This cannot be undone.')) return;
+  tasks=tasks.filter(t=>t.id!==id); saveTasks(tasks); updateBadges();
+  renderTaskList(false); renderTaskList(true);
+  toast('🗑 Task deleted.','ok');
+}
+
+/* ============================================================ FILE PREVIEW */
+function openFilePreview(fileIdx, taskId){
+  const task=tasks.find(t=>t.id===taskId);
+  if(!task) return;
+  const file=task.files[fileIdx];
+  if(!file) return;
+  const wrap=document.getElementById('file-modal-content');
+  if(file.type.startsWith('image/')){
+    wrap.innerHTML=`<h3 style="margin-bottom:12px;font-family:'DM Serif Display',serif;color:var(--navy);">${esc(file.name)}</h3><img src="${file.dataUrl}" style="max-width:100%;border-radius:10px;display:block;"/>`;
+  } else if(file.type==='application/pdf'){
+    wrap.innerHTML=`<h3 style="margin-bottom:12px;font-family:'DM Serif Display',serif;color:var(--navy);">${esc(file.name)}</h3><iframe src="${file.dataUrl}" style="width:100%;height:70vh;border:none;border-radius:10px;"></iframe>`;
+  } else {
+    wrap.innerHTML=`<h3 style="margin-bottom:12px;font-family:'DM Serif Display',serif;color:var(--navy);">${esc(file.name)}</h3><div style="text-align:center;padding:40px;"><div style="font-size:4rem;margin-bottom:12px;">📄</div><p style="color:var(--text3);margin-bottom:16px;">Preview not available for this file type.</p><a href="${file.dataUrl}" download="${esc(file.name)}" class="btn btn-primary">⬇ Download File</a></div>`;
+  }
+  document.getElementById('file-modal').classList.add('open');
+}
+
+/* ============================================================ STUDENT TRACKER */
+function renderTracker(){
+  const scans=loadScans();
+  if(!tasks.length){ document.getElementById('tracker-content').innerHTML='<div class="card" style="text-align:center;padding:40px;color:var(--muted);">No tasks created yet.</div>'; return; }
+  let html='';
+  tasks.filter(t=>!t.archived).forEach(task=>{
+    const taskScans=scans.filter(s=>s.taskId===task.id);
+    const approved =taskScans.filter(s=>s.approved).length;
+    const ds=deadlineStatus(task.deadline);
+    html+=`<div class="card" style="margin-bottom:20px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--navy);">${esc(task.title)}</span>
+            <span class="tag tag-${task.type==='performance'?'perf':'act'}">${task.type==='performance'?'⚡ Performance':'📝 Activity'}</span>
+          </div>
+          <div style="font-size:.78rem;color:var(--text3);margin-top:4px;">${task.subject?esc(task.subject)+' · ':''}<span class="deadline-badge ${ds.cls}">${ds.label}</span></div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:1.4rem;font-weight:800;color:var(--navy);">${taskScans.length}</div>
+          <div style="font-size:.72rem;color:var(--muted);">scans · ${approved} approved</div>
+        </div>
+      </div>
+      <div class="tracker-wrap">
+        <table class="tracker-table">
+          <thead><tr><th>#</th><th>Student Name</th><th>Scanned At</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            ${taskScans.length?taskScans.map((s,i)=>`
+              <tr>
+                <td style="color:var(--muted);">${i+1}</td>
+                <td><span class="student-name">${esc(s.studentName||'Unknown')}</span></td>
+                <td><span class="scan-time">${fmtDate(s.scannedAt)}</span></td>
+                <td>
+                  <span class="tag ${s.approved?'':'tag-act'}" style="${s.approved?'background:var(--green-bg);color:var(--green);':'background:#fef9c3;color:#92400e;'}">
+                    ${s.approved?'✅ Approved':'⏳ Pending'}
+                  </span>
+                </td>
+                <td>
+                  <button class="approve-btn ${s.approved?'approved':''}" onclick="toggleApprove('${task.id}','${s.id}')">
+                    <span>${s.approved?'✅':'☐'}</span>
+                    <span>${s.approved?'Approved':'Approve'}</span>
+                  </button>
+                </td>
+              </tr>
+            `).join(''):`<tr><td colspan="5"><div class="empty-tracker"><span>👤</span>No students have scanned this task yet.</div></td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  });
+  document.getElementById('tracker-content').innerHTML=html;
+}
+
+function toggleApprove(taskId, scanId){
+  const scans=loadScans();
+  const scan=scans.find(s=>s.taskId===taskId&&s.id===scanId);
+  if(!scan) return;
+  scan.approved=!scan.approved;
+  saveScans(scans);
+  renderTracker();
+  toast(scan.approved?'✅ Student approved!':'↩ Approval removed.','ok');
+}
+
+function openTrackerFor(taskId){
+  goPage('tracker', document.querySelector('.sb-item[onclick*="tracker"]'));
+  setTimeout(()=>{
+    const el=document.querySelector(`#tracker-content .card`);
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  },100);
+}
+
+/* ============================================================ UTILITIES */
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'&&document.getElementById('page-create').classList.contains('active')){
+    if(!document.getElementById('btn-gen').disabled) createTask();
+  }
+});
+
+/* ============================================================ INIT */
+document.addEventListener('DOMContentLoaded',()=>{
+  updateBadges();
+  renderDashboard();
+  // Listen for storage changes from student app
+  window.addEventListener('storage',e=>{ if(e.key===SCAN_KEY){ renderDashboard(); if(document.getElementById('page-tracker').classList.contains('active')) renderTracker(); } });
+});
+</script>
+</body>
+</html>
